@@ -427,6 +427,74 @@ tr:hover td{background:#F8FAFC}
 .backup-info-strip{background:var(--primary-light);border-left:4px solid var(--primary);border-radius:8px;padding:13px 18px;font-size:12.5px;color:#003D73;line-height:1.65;display:flex;align-items:flex-start;gap:10px}
 .backup-info-strip-icon{font-size:18px;flex-shrink:0;margin-top:1px}
 .table-wrapper{overflow-x:auto;max-height:520px;overflow-y:auto}
+/* ── BIBLIOTECA ─────────────────────────────────────────── */
+.bib-hero{background:linear-gradient(140deg,#003D73 0%,#0061B5 55%,#0078D4 100%);border-radius:14px;padding:26px 28px;color:#fff;margin-bottom:22px;display:flex;align-items:center;gap:22px;box-shadow:0 4px 20px rgba(0,61,115,.22);position:relative;overflow:hidden}
+.bib-hero::before{content:'';position:absolute;right:-30px;top:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none}
+.bib-hero-icon{font-size:46px;flex-shrink:0}
+.bib-hero-body{flex:1;min-width:0}
+.bib-hero-title{font-size:19px;font-weight:900;letter-spacing:-.3px;margin-bottom:3px}
+.bib-hero-sub{font-size:12.5px;opacity:.8;line-height:1.5;margin-bottom:10px}
+.bib-hero-chips{display:flex;gap:8px;flex-wrap:wrap}
+.bib-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:3px 13px;font-size:11.5px;font-weight:600}
+.bib-hero-btns{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.bib-btn-main{background:#fff;color:#003D73;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;transition:all .15s;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.bib-btn-main:hover{background:#E8F0FA;transform:translateY(-1px)}
+.bib-btn-sec{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.32);border-radius:9px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.bib-btn-sec:hover{background:rgba(255,255,255,.24)}
+.bib-drop-zone{border:2px dashed #A8C4E0;border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;background:linear-gradient(160deg,#F8FAFD,#fff);transition:all .2s;margin-bottom:18px}
+.bib-drop-zone:hover,.bib-drop-zone.dragover{border-color:#0078D4;background:#EBF3FB}
+.bib-drop-icon{font-size:38px;display:block;margin-bottom:8px}
+.bib-drop-title{font-size:14px;font-weight:700;color:#1B1F26;margin-bottom:4px}
+.bib-drop-sub{font-size:12px;color:#5C6370;line-height:1.5}
+.bib-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.bib-search-wrap{flex:1;min-width:180px;position:relative}
+.bib-search{width:100%;padding:9px 13px 9px 36px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);transition:border .2s;font-family:inherit}
+.bib-search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,120,212,.1)}
+.bib-search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.45;pointer-events:none;font-size:14px}
+.bib-cats{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+.bib-cat{padding:6px 15px;border-radius:99px;font-size:12px;font-weight:600;border:1.5px solid var(--border);cursor:pointer;background:var(--surface);color:var(--text-muted);white-space:nowrap;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+.bib-cat:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.bib-cat.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 2px 8px rgba(0,83,156,.28)}
+.bib-pill{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:17px;padding:0 5px;border-radius:99px;font-size:10px;font-weight:700}
+.bib-cat.active .bib-pill{background:rgba(255,255,255,.22);color:#fff}
+.bib-cat:not(.active) .bib-pill{background:var(--primary-light);color:var(--primary)}
+.bib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.bib-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:15px;transition:all .18s;display:flex;flex-direction:column;gap:11px}
+.bib-card:hover{border-color:#99BAE0;box-shadow:0 4px 16px rgba(0,83,156,.1);transform:translateY(-2px)}
+.bib-card-top{display:flex;align-items:flex-start;gap:11px}
+.bib-type{width:42px;height:50px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;flex-shrink:0;text-transform:uppercase;letter-spacing:.3px}
+.bt-pdf{background:#FFEBE9;color:#A4262C}.bt-doc{background:#EBF3FB;color:#003D73}
+.bt-xls{background:#E8F5E9;color:#0A6B0A}.bt-img{background:#FFF3E0;color:#7A3800}
+.bt-zip{background:#F3E8FF;color:#5C0099}.bt-txt{background:#F5F5F5;color:#5A5A5A}
+.bt-ppt{background:#FFF0E8;color:#8B2500}.bt-msg{background:#E8F4FD;color:#0050A0}
+.bt-oth{background:#F5F5F5;color:#5A5A5A}
+.bib-info{flex:1;min-width:0}
+.bib-name{font-size:13px;font-weight:700;color:var(--text);line-height:1.4;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bib-desc-txt{font-size:11.5px;color:var(--text-muted);line-height:1.4;margin-bottom:5px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.bib-badge{display:inline-flex;padding:2px 10px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.bc-email{background:#EBF3FB;color:#003D73}.bc-norm{background:#FFF3E0;color:#7A3800}
+.bc-doc{background:var(--primary-light);color:var(--primary)}.bc-mat{background:#E8F5E9;color:#0A6B0A}
+.bc-out{background:#F5F5F5;color:#5A5A5A}
+.bib-meta{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-muted);margin-top:4px}
+.bib-card-foot{display:flex;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--border)}
+.bib-dl{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 0;border:none;border-radius:7px;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.bib-dl:hover{background:var(--primary);color:#fff}
+.bib-del{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:none;border-radius:7px;background:var(--danger-bg);color:var(--danger);font-size:14px;cursor:pointer;transition:all .15s;flex-shrink:0}
+.bib-del:hover{background:var(--danger);color:#fff}
+.bib-empty{grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--text-muted)}
+.bib-empty-icon{font-size:48px;display:block;margin-bottom:10px;opacity:.4}
+.bib-prog-wrap{height:6px;background:var(--border);border-radius:4px;overflow:hidden;margin:8px 0}
+.bib-prog{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:4px;transition:width .2s;width:0%}
+.bib-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:1050;padding:28px 16px;overflow-y:auto;align-items:flex-start;justify-content:center}
+.bib-modal-bg.open{display:flex}
+.bib-modal{background:var(--surface);border-radius:12px;width:100%;max-width:540px;box-shadow:0 24px 72px rgba(0,0,0,.28);overflow:hidden}
+.bib-mhdr{background:var(--primary-dark);color:#fff;padding:16px 22px;display:flex;align-items:center;gap:10px}
+.bib-mhdr-title{font-size:15px;font-weight:700;flex:1}
+.bib-mclose{background:none;border:none;color:#fff;font-size:19px;cursor:pointer;opacity:.8;padding:2px 6px;border-radius:4px}
+.bib-mclose:hover{opacity:1;background:rgba(255,255,255,.15)}
+.bib-mbody{padding:22px}
+.bib-mfoot{padding:13px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--bg)}
+.bib-file-preview{max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-muted);background:var(--bg);margin-top:10px;line-height:1.8}
 </style>
 </head>
 <body>
@@ -472,6 +540,10 @@ tr:hover td{background:#F8FAFC}
   </a>
   <a class="nav-item" onclick="showPage('backup')" id="nav-backup">
     <span class="nav-icon">💾</span><span>Backup</span>
+  </a>
+  <a class="nav-item" onclick="showPage('biblioteca')" id="nav-biblioteca">
+    <span class="nav-icon">📚</span><span>Biblioteca</span>
+    <span class="pill-count" id="nav-count-bib" style="font-size:10px;margin-left:auto">0</span>
   </a>
   <div class="sidebar-footer">
     <div style="font-size:11px;color:var(--text-muted)">v1.0 • INSS 2026</div>
@@ -775,7 +847,86 @@ tr:hover td{background:#F8FAFC}
     </div>
   </div>
 
+  <!-- ===== BIBLIOTECA ===== -->
+  <div id="page-biblioteca" class="page">
+    <div class="page-header">
+      <div class="page-title">📚 Biblioteca de Documentos</div>
+      <div class="page-sub">E-mails, Normativos, Documentos, Material de Apoio às Entidades e outros arquivos dos ACTs</div>
+    </div>
+    <div class="bib-hero">
+      <div class="bib-hero-icon">📚</div>
+      <div class="bib-hero-body">
+        <div class="bib-hero-title">Biblioteca de Documentos</div>
+        <div class="bib-hero-sub">Centralize todos os arquivos relacionados aos ACTs e Termos de Adesão — PDFs, normativos, e-mails, planilhas e muito mais.</div>
+        <div class="bib-hero-chips">
+          <span class="bib-chip">📄 <span id="bib-stat-total">0</span> documentos</span>
+          <span class="bib-chip">🔍 <span id="bib-stat-shown">0</span> exibidos</span>
+        </div>
+      </div>
+      <div class="bib-hero-btns">
+        <button class="bib-btn-main" onclick="bibOpenModal(true)">⬆ Upload em Lote</button>
+        <button class="bib-btn-sec" onclick="bibOpenModal(false)">＋ Adicionar Documento</button>
+      </div>
+    </div>
+    <div class="bib-drop-zone" id="bib-drop-zone">
+      <span class="bib-drop-icon">☁️</span>
+      <div class="bib-drop-title">Arraste e solte arquivos aqui</div>
+      <div class="bib-drop-sub">Suporta centenas de arquivos simultâneos — PDF, DOC, XLS, imagens e mais<br>Ou clique para selecionar</div>
+    </div>
+    <div class="bib-toolbar">
+      <div class="bib-search-wrap">
+        <span class="bib-search-ico">🔍</span>
+        <input type="text" class="bib-search" id="bib-search-input" placeholder="Buscar por nome, descrição ou categoria..." oninput="bibSearch(this.value)">
+      </div>
+    </div>
+    <div class="bib-cats" id="bib-cat-tabs"></div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px" id="bib-count-lbl"></p>
+    <div class="bib-grid" id="bib-grid"></div>
+  </div>
+
 </main>
+
+<!-- ===== BIBLIOTECA MODAL ===== -->
+<div class="bib-modal-bg" id="bib-modal-bg" onclick="bibCloseBg(event)">
+  <div class="bib-modal">
+    <div class="bib-mhdr">
+      <span class="bib-mhdr-title" id="bib-modal-title">Adicionar Documento</span>
+      <button class="bib-mclose" onclick="bibCloseModal()">✕</button>
+    </div>
+    <div class="bib-mbody">
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Categoria <span class="req">*</span></label>
+        <select class="form-select" id="bib-cat-sel">
+          <option value="E-mails">📧 E-mails</option>
+          <option value="Normativos">📋 Normativos</option>
+          <option value="Documentos" selected>📄 Documentos</option>
+          <option value="Material de Apoio às Entidades">📚 Material de Apoio às Entidades</option>
+          <option value="Outros">📁 Outros</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Descrição (opcional)</label>
+        <input type="text" class="form-input" id="bib-desc-inp" placeholder="Breve descrição do documento...">
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label">Arquivo(s) <span class="req">*</span></label>
+        <input type="file" id="bib-file-inp" multiple style="display:none" onchange="bibPreview()">
+        <button class="btn btn-outline" onclick="document.getElementById('bib-file-inp').click()">📂 Selecionar arquivo(s)</button>
+      </div>
+      <div class="bib-file-preview" id="bib-preview"></div>
+      <div id="bib-prog-wrap" style="display:none;margin-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px">
+          <span>Processando arquivos...</span><span id="bib-prog-txt">0 de 0</span>
+        </div>
+        <div class="bib-prog-wrap"><div class="bib-prog" id="bib-prog"></div></div>
+      </div>
+    </div>
+    <div class="bib-mfoot">
+      <button class="btn btn-secondary" onclick="bibCloseModal()">Cancelar</button>
+      <button class="btn btn-primary" id="bib-send-btn" onclick="bibSubmit()">⬆ Enviar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== MODAL ADD/EDIT ===== -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
@@ -1086,6 +1237,7 @@ function showPage(name) {
   else if (name === 'calendario') renderCalendario();
   else if (name === 'settings') loadSettings();
   else if (name === 'backup') renderBackup();
+  else if (name === 'biblioteca') renderBiblioteca();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2042,6 +2194,229 @@ function updateBadges() {
   badge.textContent = pend;
   badge.style.display = pend > 0 ? '' : 'none';
   document.getElementById('nav-count-painel').textContent = acts.length;
+}
+
+// ══════════════════════════════════════════════════════════════
+// BIBLIOTECA — IndexedDB
+// ══════════════════════════════════════════════════════════════
+let _bibDB=null, _bibDocs=[], _bibCat='Todos', _bibQ='';
+
+function bibOpen(){
+  return new Promise((res,rej)=>{
+    if(_bibDB) return res(_bibDB);
+    const r=indexedDB.open('actBib',1);
+    r.onupgradeneeded=e=>{
+      const s=e.target.result.createObjectStore('docs',{keyPath:'id',autoIncrement:true});
+      s.createIndex('cat','cat',{unique:false});
+    };
+    r.onsuccess=e=>{_bibDB=e.target.result;res(_bibDB);};
+    r.onerror=e=>rej(e.target.error);
+  });
+}
+
+async function bibSave(file,cat,desc){
+  const db=await bibOpen();
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=e=>{
+      const tx=db.transaction('docs','readwrite');
+      const req=tx.objectStore('docs').add({
+        nome:file.name, cat, desc:desc||'',
+        tipo:(file.name.split('.').pop()||'').toLowerCase(),
+        tam:bibFmtSz(file.size),
+        data:new Date().toLocaleDateString('pt-BR'),
+        mime:file.type||'application/octet-stream',
+        blob:e.target.result
+      });
+      req.onsuccess=()=>res(); req.onerror=()=>rej(req.error);
+    };
+    fr.onerror=()=>rej(fr.error);
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+async function bibAll(){
+  const db=await bibOpen();
+  return new Promise((res,rej)=>{
+    const r=db.transaction('docs','readonly').objectStore('docs').getAll();
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+}
+
+async function bibDel(id){
+  const db=await bibOpen();
+  return new Promise((res,rej)=>{
+    const r=db.transaction('docs','readwrite').objectStore('docs').delete(id);
+    r.onsuccess=()=>res(); r.onerror=()=>rej(r.error);
+  });
+}
+
+async function bibDownload(id){
+  const db=await bibOpen();
+  const doc=await new Promise((res,rej)=>{
+    const r=db.transaction('docs','readonly').objectStore('docs').get(id);
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+  if(!doc) return;
+  const url=URL.createObjectURL(new Blob([doc.blob],{type:doc.mime}));
+  const a=document.createElement('a'); a.href=url; a.download=doc.nome; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
+function bibFmtSz(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
+
+function bibTypeClass(ext){
+  return {pdf:'bt-pdf',doc:'bt-doc',docx:'bt-doc',odt:'bt-doc',
+    xls:'bt-xls',xlsx:'bt-xls',ods:'bt-xls',csv:'bt-xls',
+    jpg:'bt-img',jpeg:'bt-img',png:'bt-img',gif:'bt-img',bmp:'bt-img',webp:'bt-img',svg:'bt-img',
+    zip:'bt-zip',rar:'bt-zip','7z':'bt-zip',
+    txt:'bt-txt',md:'bt-txt',
+    ppt:'bt-ppt',pptx:'bt-ppt',
+    msg:'bt-msg',eml:'bt-msg'}[ext]||'bt-oth';
+}
+
+function bibCatClass(cat){
+  return {'E-mails':'bc-email','Normativos':'bc-norm','Documentos':'bc-doc',
+    'Material de Apoio às Entidades':'bc-mat','Outros':'bc-out'}[cat]||'bc-out';
+}
+
+async function renderBiblioteca(){
+  _bibDocs=await bibAll();
+  bibRenderUI();
+  bibSetupDrop();
+}
+
+function bibRenderUI(){
+  const CATS=['Todos','E-mails','Normativos','Documentos','Material de Apoio às Entidades','Outros'];
+  let list=_bibDocs;
+  if(_bibCat!=='Todos') list=list.filter(d=>d.cat===_bibCat);
+  if(_bibQ){const q=_bibQ.toLowerCase();list=list.filter(d=>d.nome.toLowerCase().includes(q)||(d.desc||'').toLowerCase().includes(q)||(d.cat||'').toLowerCase().includes(q));}
+
+  const ge=id=>document.getElementById(id);
+  if(ge('bib-stat-total')) ge('bib-stat-total').textContent=_bibDocs.length;
+  if(ge('bib-stat-shown')) ge('bib-stat-shown').textContent=list.length;
+  if(ge('nav-count-bib')) ge('nav-count-bib').textContent=_bibDocs.length;
+
+  const catCnt=c=>c==='Todos'?_bibDocs.length:_bibDocs.filter(d=>d.cat===c).length;
+  if(ge('bib-cat-tabs')) ge('bib-cat-tabs').innerHTML=CATS.map(c=>
+    `<button class="bib-cat${_bibCat===c?' active':''}" onclick="bibSetCat('${c.replace(/'/g,"\\'")}')">
+      ${c}<span class="bib-pill">${catCnt(c)}</span></button>`).join('');
+
+  if(ge('bib-count-lbl')) ge('bib-count-lbl').textContent=`${list.length} documento${list.length!==1?'s':''} encontrado${list.length!==1?'s':''}`;
+
+  const grid=ge('bib-grid');
+  if(!grid) return;
+  if(!list.length){
+    grid.innerHTML=`<div class="bib-empty"><span class="bib-empty-icon">${_bibQ?'🔍':'📂'}</span>
+      <p style="font-size:14px">${_bibQ?'Nenhum resultado para "<strong>'+_bibQ+'</strong>"':
+        _bibDocs.length===0?'Nenhum documento ainda.<br>Use <strong>Upload em Lote</strong> ou <strong>Adicionar Documento</strong> para começar.':
+        'Nenhum documento nesta categoria.'}</p></div>`;
+    return;
+  }
+  const frag=document.createDocumentFragment();
+  list.forEach(d=>{
+    const div=document.createElement('div');
+    div.className='bib-card';
+    const ext=d.tipo||'';
+    div.innerHTML=`<div class="bib-card-top">
+      <div class="bib-type ${bibTypeClass(ext)}">${(ext||'?').toUpperCase().slice(0,4)}</div>
+      <div class="bib-info">
+        <div class="bib-name" title="${d.nome.replace(/"/g,'&quot;')}">${d.nome}</div>
+        ${d.desc?`<div class="bib-desc-txt">${d.desc}</div>`:''}
+        <span class="bib-badge ${bibCatClass(d.cat)}">${d.cat}</span>
+        <div class="bib-meta"><span>${d.tam}</span><span style="opacity:.3">•</span><span>${d.data}</span></div>
+      </div></div>
+      <div class="bib-card-foot">
+        <button class="bib-dl" onclick="bibDownload(${d.id})">⬇ Baixar</button>
+        <button class="bib-del" onclick="bibAskDel(${d.id},'${d.nome.slice(0,40).replace(/'/g,"\\'")}')">🗑</button>
+      </div>`;
+    frag.appendChild(div);
+  });
+  grid.innerHTML=''; grid.appendChild(frag);
+}
+
+function bibSetCat(c){_bibCat=c;bibRenderUI();}
+function bibSearch(q){_bibQ=q;bibRenderUI();}
+
+async function bibAskDel(id,nome){
+  if(!confirm(`Excluir "${nome}"?\nEssa ação não pode ser desfeita.`)) return;
+  await bibDel(id);
+  _bibDocs=await bibAll();
+  bibRenderUI();
+  toast('Documento excluído.','success');
+}
+
+function bibOpenModal(bulk){
+  document.getElementById('bib-modal-bg').classList.add('open');
+  document.getElementById('bib-modal-title').textContent=bulk?'Upload em Lote':'Adicionar Documento';
+  const inp=document.getElementById('bib-file-inp');
+  inp.multiple=!!bulk; inp.value='';
+  document.getElementById('bib-preview').innerHTML='';
+  document.getElementById('bib-desc-inp').value='';
+  document.getElementById('bib-prog-wrap').style.display='none';
+}
+function bibCloseModal(){document.getElementById('bib-modal-bg').classList.remove('open');}
+function bibCloseBg(e){if(e.target===document.getElementById('bib-modal-bg'))bibCloseModal();}
+
+function bibPreview(){
+  const inp=document.getElementById('bib-file-inp');
+  const prev=document.getElementById('bib-preview');
+  if(!inp.files.length){prev.innerHTML='';return;}
+  const lines=Array.from(inp.files).slice(0,8).map(f=>`• ${f.name} <span style="opacity:.6">(${bibFmtSz(f.size)})</span>`);
+  if(inp.files.length>8) lines.push(`<em>... e mais ${inp.files.length-8}</em>`);
+  prev.innerHTML=`<strong>${inp.files.length} arquivo(s):</strong><br>`+lines.join('<br>');
+}
+
+async function bibSubmit(){
+  const inp=document.getElementById('bib-file-inp');
+  const cat=document.getElementById('bib-cat-sel').value;
+  const desc=document.getElementById('bib-desc-inp').value.trim();
+  const files=Array.from(inp.files);
+  if(!files.length){toast('Selecione ao menos um arquivo.','error');return;}
+  const btn=document.getElementById('bib-send-btn');
+  btn.disabled=true; btn.textContent='Enviando...';
+  const pw=document.getElementById('bib-prog-wrap');
+  const pb=document.getElementById('bib-prog');
+  const pt=document.getElementById('bib-prog-txt');
+  pw.style.display='';
+  let done=0;
+  for(let i=0;i<files.length;i+=5){
+    await Promise.all(files.slice(i,i+5).map(f=>bibSave(f,cat,desc)));
+    done+=Math.min(5,files.length-i);
+    pb.style.width=Math.round(done/files.length*100)+'%';
+    pt.textContent=`${done} de ${files.length}`;
+    await new Promise(r=>setTimeout(r,0));
+  }
+  bibCloseModal();
+  btn.disabled=false; btn.textContent='⬆ Enviar';
+  pb.style.width='0%'; pw.style.display='none';
+  _bibDocs=await bibAll();
+  bibRenderUI();
+  toast(`${files.length} arquivo(s) adicionado(s)!`,'success');
+}
+
+function bibSetupDrop(){
+  const zone=document.getElementById('bib-drop-zone');
+  if(!zone||zone._ready) return;
+  zone._ready=true;
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+  zone.addEventListener('drop',e=>{
+    e.preventDefault(); zone.classList.remove('dragover');
+    const files=Array.from(e.dataTransfer.files);
+    if(!files.length) return;
+    bibOpenModal(true);
+    const dt=new DataTransfer();
+    files.forEach(f=>dt.items.add(f));
+    try{document.getElementById('bib-file-inp').files=dt.files;}catch(_){}
+    bibPreview();
+  });
+  zone.addEventListener('click',()=>{
+    const inp=document.getElementById('bib-file-inp');
+    inp.multiple=true; inp.value='';
+    inp.onchange=()=>{bibOpenModal(true);bibPreview();};
+    inp.click();
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
