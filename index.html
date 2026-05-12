@@ -2408,15 +2408,24 @@ function bibSetupDrop(){
     bibOpenModal(true);
     const dt=new DataTransfer();
     files.forEach(f=>dt.items.add(f));
-    try{document.getElementById('bib-file-inp').files=dt.files;}catch(_){}
+    const inp=document.getElementById('bib-file-inp');
+    try{inp.files=dt.files;}catch(_){}
     bibPreview();
   });
+  // Clicar na zona abre o modal e depois o seletor de arquivos
   zone.addEventListener('click',()=>{
-    const inp=document.getElementById('bib-file-inp');
-    inp.multiple=true; inp.value='';
-    inp.onchange=()=>{bibOpenModal(true);bibPreview();};
-    inp.click();
+    bibOpenModal(true);
+    setTimeout(()=>document.getElementById('bib-file-inp').click(),120);
   });
+}
+
+function bibPreview(){
+  const inp=document.getElementById('bib-file-inp');
+  const prev=document.getElementById('bib-preview');
+  if(!inp||!inp.files||!inp.files.length){if(prev)prev.innerHTML='';return;}
+  const lines=Array.from(inp.files).slice(0,8).map(f=>`• ${f.name} <span style="opacity:.6">(${bibFmtSz(f.size)})</span>`);
+  if(inp.files.length>8) lines.push(`<em>... e mais ${inp.files.length-8}</em>`);
+  if(prev) prev.innerHTML=`<strong>${inp.files.length} arquivo(s) selecionado(s):</strong><br>`+lines.join('<br>');
 }
 
 // ══════════════════════════════════════════════════════════════
