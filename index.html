@@ -1513,6 +1513,7 @@ const MONITORING_CYCLE = [
 // ══════════════════════════════════════════════════════════════
 const DATA_VERSION = '2026-05-12';
 let acts = [], settings = {}, sortField = 'id', sortDir = 1;
+let currentPage = 'dashboard';
 let charts = {};
 
 // ══════════════════════════════════════════════════════════════
@@ -1541,6 +1542,40 @@ function saveData() {
   localStorage.setItem('acts_inss_data', JSON.stringify(acts));
   localStorage.setItem('acts_inss_settings', JSON.stringify(settings));
   updateLastUpdated();
+  cloudSaveSoon();   // envia para a nuvem (compartilhado com a equipe)
+}
+
+// ── Sincronização com a nuvem (Supabase) ──
+// Todo o estado (acts + settings) é guardado como UM registro (id=1) na tabela app_data.
+let _cloudSaveTimer = null;
+function cloudSaveSoon() {
+  if (_cloudSaveTimer) clearTimeout(_cloudSaveTimer);
+  _cloudSaveTimer = setTimeout(cloudSave, 600); // agrupa edições rápidas
+}
+async function cloudSave() {
+  const s = supa(); if (!s) return;
+  try {
+    const r = await s.from('app_data').upsert({ id: 1, acts, settings, updated_at: new Date().toISOString() });
+    if (r.error) console.error('cloudSave', r.error);
+  } catch (e) { console.error('cloudSave', e); }
+}
+async function cloudLoad() {
+  const s = supa(); if (!s) return false;
+  try {
+    const r = await s.from('app_data').select('acts,settings').eq('id', 1).maybeSingle();
+    if (r.error) { console.error('cloudLoad', r.error); return false; }
+    if (r.data && Array.isArray(r.data.acts)) {
+      acts = r.data.acts;
+      if (r.data.settings) settings = Object.assign({}, settings, r.data.settings);
+      localStorage.setItem('acts_inss_data', JSON.stringify(acts));
+      localStorage.setItem('acts_inss_settings', JSON.stringify(settings));
+      return true;
+    } else {
+      // nuvem ainda vazia: semeia com os dados locais atuais
+      await cloudSave();
+      return false;
+    }
+  } catch (e) { console.error('cloudLoad', e); return false; }
 }
 
 function updateLastUpdated() {
@@ -1612,6 +1647,7 @@ function calcDates() {
 // NAVIGATION
 // ══════════════════════════════════════════════════════════════
 function showPage(name) {
+  currentPage = name;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${name}`).classList.add('active');
@@ -3289,11 +3325,18 @@ function resetWizard() {
 // ══════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  loadData();
+document.addEventListener('DOMContentLoaded', async () => {
+  loadData();              // 1º: mostra a cópia local (rápido / offline)
   updateLastUpdated();
   updateBadges();
   renderDashboard();
+  // 2º: busca a versão mais recente da nuvem (compartilhada) e atualiza a tela
+  const ok = await cloudLoad();
+  if (ok) {
+    updateLastUpdated();
+    updateBadges();
+    showPage(currentPage);
+  }
 });
 </script>
 
