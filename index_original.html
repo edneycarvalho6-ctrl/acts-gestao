@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sistema de Gestão de ACTs — INSS</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ══ CONFIGURAÇÃO DO SUPABASE (Biblioteca compartilhada) ══
+  // Substitua os 2 valores abaixo pelos do SEU projeto Supabase.
+  // Settings → API → "Project URL" e "anon public".
+  const SUPABASE_URL = 'https://splkpfmpnpclxxuktggl.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_cqsFsMHz6Qja-EDHqLlIAA_RClNH72Q';
+  const BIB_BUCKET = 'biblioteca'; // nome do bucket de Storage (sensível a maiúsculas)
+  let _supa = null;
+  function supa(){
+    if(_supa) return _supa;
+    if(typeof supabase==='undefined' || SUPABASE_URL.startsWith('COLE_')) return null;
+    _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return _supa;
+  }
+</script>
 <style>
 :root {
   --primary: #00539C;
@@ -2569,68 +2585,70 @@ function updateBadges() {
 // ══════════════════════════════════════════════════════════════
 // BIBLIOTECA — IndexedDB
 // ══════════════════════════════════════════════════════════════
-let _bibDB=null, _bibDocs=[], _bibCat='Todos', _bibQ='';
+let _bibDocs=[], _bibCat='Todos', _bibQ='';
 
-function bibOpen(){
-  return new Promise((res,rej)=>{
-    if(_bibDB) return res(_bibDB);
-    const r=indexedDB.open('actBib',1);
-    r.onupgradeneeded=e=>{
-      const s=e.target.result.createObjectStore('docs',{keyPath:'id',autoIncrement:true});
-      s.createIndex('cat','cat',{unique:false});
-    };
-    r.onsuccess=e=>{_bibDB=e.target.result;res(_bibDB);};
-    r.onerror=e=>rej(e.target.error);
-  });
+// Gera um caminho único no Storage preservando a extensão.
+function bibPath(file){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  const rnd=(crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.round(Math.random()*1e9);
+  return rnd+(ext?'.'+ext:'');
 }
 
 async function bibSave(file,cat,desc){
-  const db=await bibOpen();
-  return new Promise((res,rej)=>{
-    const fr=new FileReader();
-    fr.onload=e=>{
-      const tx=db.transaction('docs','readwrite');
-      const req=tx.objectStore('docs').add({
-        nome:file.name, cat, desc:desc||'',
-        tipo:(file.name.split('.').pop()||'').toLowerCase(),
-        tam:bibFmtSz(file.size),
-        data:new Date().toLocaleDateString('pt-BR'),
-        mime:file.type||'application/octet-stream',
-        blob:e.target.result
-      });
-      req.onsuccess=()=>res(); req.onerror=()=>rej(req.error);
-    };
-    fr.onerror=()=>rej(fr.error);
-    fr.readAsArrayBuffer(file);
+  const s=supa();
+  if(!s) throw new Error('Supabase não configurado.');
+  const path=bibPath(file);
+  // 1) sobe o arquivo para o Storage
+  const up=await s.storage.from(BIB_BUCKET).upload(path,file,{
+    contentType:file.type||'application/octet-stream', upsert:false
   });
+  if(up.error) throw up.error;
+  // 2) grava os metadados na tabela
+  const ins=await s.from('biblioteca_docs').insert({
+    nome:file.name, cat, descricao:desc||'',
+    tipo:(file.name.split('.').pop()||'').toLowerCase(),
+    tam:bibFmtSz(file.size),
+    data:new Date().toLocaleDateString('pt-BR'),
+    mime:file.type||'application/octet-stream',
+    path
+  });
+  if(ins.error){ // desfaz o upload se a gravação falhar
+    await s.storage.from(BIB_BUCKET).remove([path]);
+    throw ins.error;
+  }
 }
 
 async function bibAll(){
-  const db=await bibOpen();
-  return new Promise((res,rej)=>{
-    const r=db.transaction('docs','readonly').objectStore('docs').getAll();
-    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
-  });
+  const s=supa();
+  if(!s) return [];
+  const r=await s.from('biblioteca_docs').select('*').order('id',{ascending:false});
+  if(r.error){console.error(r.error);return [];}
+  // mapeia descricao -> desc para manter a UI existente
+  return (r.data||[]).map(d=>({...d, desc:d.descricao}));
 }
 
 async function bibDel(id){
-  const db=await bibOpen();
-  return new Promise((res,rej)=>{
-    const r=db.transaction('docs','readwrite').objectStore('docs').delete(id);
-    r.onsuccess=()=>res(); r.onerror=()=>rej(r.error);
-  });
+  const s=supa();
+  if(!s) return;
+  // busca o caminho do arquivo antes de excluir
+  const q=await s.from('biblioteca_docs').select('path').eq('id',id).single();
+  if(!q.error && q.data && q.data.path){
+    await s.storage.from(BIB_BUCKET).remove([q.data.path]);
+  }
+  const del=await s.from('biblioteca_docs').delete().eq('id',id);
+  if(del.error) throw del.error;
 }
 
 async function bibDownload(id){
-  const db=await bibOpen();
-  const doc=await new Promise((res,rej)=>{
-    const r=db.transaction('docs','readonly').objectStore('docs').get(id);
-    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
-  });
+  const s=supa();
+  if(!s) return;
+  const doc=_bibDocs.find(d=>String(d.id)===String(id));
   if(!doc) return;
-  const url=URL.createObjectURL(new Blob([doc.blob],{type:doc.mime}));
-  const a=document.createElement('a'); a.href=url; a.download=doc.nome; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  // bucket público: baixa via URL pública
+  const pub=s.storage.from(BIB_BUCKET).getPublicUrl(doc.path);
+  const a=document.createElement('a');
+  a.href=pub.data.publicUrl; a.download=doc.nome; a.target='_blank';
+  document.body.appendChild(a); a.click(); a.remove();
 }
 
 function bibFmtSz(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
@@ -2750,19 +2768,25 @@ async function bibSubmit(){
   const pt=document.getElementById('bib-prog-txt');
   pw.style.display='';
   let done=0;
-  for(let i=0;i<files.length;i+=5){
-    await Promise.all(files.slice(i,i+5).map(f=>bibSave(f,cat,desc)));
-    done+=Math.min(5,files.length-i);
-    pb.style.width=Math.round(done/files.length*100)+'%';
-    pt.textContent=`${done} de ${files.length}`;
-    await new Promise(r=>setTimeout(r,0));
+  try{
+    for(let i=0;i<files.length;i+=5){
+      await Promise.all(files.slice(i,i+5).map(f=>bibSave(f,cat,desc)));
+      done+=Math.min(5,files.length-i);
+      pb.style.width=Math.round(done/files.length*100)+'%';
+      pt.textContent=`${done} de ${files.length}`;
+      await new Promise(r=>setTimeout(r,0));
+    }
+    bibCloseModal();
+    toast(`${files.length} arquivo(s) adicionado(s)!`,'success');
+  }catch(err){
+    console.error(err);
+    toast('Erro ao enviar: '+(err&&err.message?err.message:'verifique a configuração do Supabase')+'.','error');
+  }finally{
+    btn.disabled=false; btn.textContent='⬆ Enviar';
+    pb.style.width='0%'; pw.style.display='none';
+    _bibDocs=await bibAll();
+    bibRenderUI();
   }
-  bibCloseModal();
-  btn.disabled=false; btn.textContent='⬆ Enviar';
-  pb.style.width='0%'; pw.style.display='none';
-  _bibDocs=await bibAll();
-  bibRenderUI();
-  toast(`${files.length} arquivo(s) adicionado(s)!`,'success');
 }
 
 function bibSetupDrop(){
