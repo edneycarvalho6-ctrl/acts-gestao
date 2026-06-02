@@ -14,11 +14,19 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_cqsFsMHz6Qja-EDHqLlIAA_RClNH72Q';
   const BIB_BUCKET = 'biblioteca'; // nome do bucket de Storage (sensível a maiúsculas)
   let _supa = null;
+  // Armazenamento seguro: usa localStorage; se o navegador bloquear (ex.: Prevenção
+  // de Rastreamento do Edge), cai para memória em vez de quebrar o cliente.
+  const _memStore = {};
+  const _safeStorage = {
+    getItem(k){ try { return localStorage.getItem(k); } catch(e){ return (k in _memStore)?_memStore[k]:null; } },
+    setItem(k,v){ try { localStorage.setItem(k,v); } catch(e){ _memStore[k]=v; } },
+    removeItem(k){ try { localStorage.removeItem(k); } catch(e){ delete _memStore[k]; } }
+  };
   function supa(){
     if(_supa) return _supa;
     if(typeof supabase==='undefined' || SUPABASE_URL.startsWith('COLE_')) return null;
     _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: _safeStorage }
     });
     return _supa;
   }
@@ -1168,6 +1176,33 @@ tr:hover td{background:#F8FAFC}
     </div>
 
     <div class="settings-card">
+      <div class="settings-title">🔒 Acesso de Administrador</div>
+      <p style="font-size:13px;color:#64748b;margin:4px 0 14px">
+        Qualquer pessoa pode <strong>visualizar</strong> o sistema. Apenas o administrador logado pode
+        <strong>alterar</strong> os dados (ACTs, pendências, biblioteca).
+      </p>
+      <div id="admin-logged-out">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input type="email" class="form-input" id="login-email" placeholder="seu-email@inss.gov.br" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Senha</label>
+            <input type="password" class="form-input" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')adminLogin()">
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn btn-primary" onclick="adminLogin()">🔑 Entrar</button>
+        </div>
+      </div>
+      <div id="admin-logged-in" style="display:none">
+        <p style="font-size:14px;margin:0 0 14px">✅ Logado como administrador (<strong id="admin-email-lbl"></strong>). Você pode editar os dados.</p>
+        <button class="btn" onclick="adminLogout()" style="background:#ef4444;color:#fff">🚪 Sair</button>
+      </div>
+    </div>
+
+    <div class="settings-card">
       <div class="settings-title">🏢 Identificação da Gerência</div>
       <div class="form-grid">
         <div class="form-group">
@@ -1514,6 +1549,7 @@ const MONITORING_CYCLE = [
 const DATA_VERSION = '2026-05-12';
 let acts = [], settings = {}, sortField = 'id', sortDir = 1;
 let currentPage = 'dashboard';
+let isAdmin = false;   // true quando o administrador está logado (pode editar)
 let charts = {};
 
 // ══════════════════════════════════════════════════════════════
@@ -1554,10 +1590,54 @@ function cloudSaveSoon() {
 }
 async function cloudSave() {
   const s = supa(); if (!s) return;
+  if (!isAdmin) return;   // só o administrador logado grava na nuvem (visitantes são só leitura)
   try {
     const r = await s.from('app_data').upsert({ id: 1, acts, settings, updated_at: new Date().toISOString() });
     if (r.error) console.error('cloudSave', r.error);
   } catch (e) { console.error('cloudSave', e); }
+}
+
+// ── Autenticação do administrador (Supabase Auth) ──
+function requireAdmin() {
+  if (isAdmin) return true;
+  toast('Apenas o administrador logado pode alterar. Faça login em Configurações.', 'error');
+  return false;
+}
+function updateAdminUI() {
+  const out = document.getElementById('admin-logged-out');
+  const inn = document.getElementById('admin-logged-in');
+  if (out) out.style.display = isAdmin ? 'none' : '';
+  if (inn) inn.style.display = isAdmin ? '' : 'none';
+}
+async function checkAuth() {
+  const s = supa(); if (!s) return;
+  try {
+    const { data } = await s.auth.getSession();
+    isAdmin = !!(data && data.session);
+    const lbl = document.getElementById('admin-email-lbl');
+    if (lbl && data && data.session) lbl.textContent = data.session.user.email || '';
+  } catch (e) { isAdmin = false; }
+  updateAdminUI();
+}
+async function adminLogin() {
+  const s = supa(); if (!s) { toast('Supabase não configurado.', 'error'); return; }
+  const email = (document.getElementById('login-email').value || '').trim();
+  const senha = document.getElementById('login-senha').value || '';
+  if (!email || !senha) { toast('Informe e-mail e senha.', 'error'); return; }
+  const r = await s.auth.signInWithPassword({ email, password: senha });
+  if (r.error) { toast('Login falhou: ' + r.error.message, 'error'); return; }
+  isAdmin = true;
+  const lbl = document.getElementById('admin-email-lbl');
+  if (lbl) lbl.textContent = email;
+  document.getElementById('login-senha').value = '';
+  updateAdminUI();
+  toast('Login efetuado! Você já pode editar.', 'success');
+}
+async function adminLogout() {
+  const s = supa(); if (s) { try { await s.auth.signOut(); } catch (e) {} }
+  isAdmin = false;
+  updateAdminUI();
+  toast('Sessão encerrada.', 'success');
 }
 async function cloudLoad() {
   const s = supa(); if (!s) return false;
@@ -2765,6 +2845,7 @@ function bibSetCat(c){_bibCat=c;bibRenderUI();}
 function bibSearch(q){_bibQ=q;bibRenderUI();}
 
 async function bibAskDel(id,nome){
+  if(!requireAdmin()) return;
   if(!confirm(`Excluir "${nome}"?\nEssa ação não pode ser desfeita.`)) return;
   await bibDel(id);
   _bibDocs=await bibAll();
@@ -2794,6 +2875,7 @@ function bibPreview(){
 }
 
 async function bibSubmit(){
+  if(!requireAdmin()) return;
   const inp=document.getElementById('bib-file-inp');
   const cat=document.getElementById('bib-cat-sel').value;
   const desc=document.getElementById('bib-desc-inp').value.trim();
@@ -3330,6 +3412,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateLastUpdated();
   updateBadges();
   renderDashboard();
+  await checkAuth();       // verifica se o administrador já está logado (sessão salva)
   // 2º: busca a versão mais recente da nuvem (compartilhada) e atualiza a tela
   const ok = await cloudLoad();
   if (ok) {
