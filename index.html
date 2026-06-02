@@ -1589,12 +1589,14 @@ function cloudSaveSoon() {
   _cloudSaveTimer = setTimeout(cloudSave, 600); // agrupa edições rápidas
 }
 async function cloudSave() {
-  const s = supa(); if (!s) return;
-  if (!isAdmin) return;   // só o administrador logado grava na nuvem (visitantes são só leitura)
+  const s = supa();
+  if (!s) { toast('Nuvem indisponível — alteração salva só neste navegador e pode se perder. (Supabase não carregou / bloqueado pelo navegador.)', 'error'); return; }
+  if (!isAdmin) { toast('Alteração NÃO enviada à nuvem: faça login como administrador em Configurações.', 'error'); return; }
   try {
     const r = await s.from('app_data').upsert({ id: 1, acts, settings, updated_at: new Date().toISOString() });
-    if (r.error) console.error('cloudSave', r.error);
-  } catch (e) { console.error('cloudSave', e); }
+    if (r.error) { console.error('cloudSave', r.error); toast('Falha ao salvar na nuvem: ' + r.error.message, 'error'); return; }
+    toast('Alterações salvas na nuvem ✓', 'success');
+  } catch (e) { console.error('cloudSave', e); toast('Falha ao salvar na nuvem (conexão bloqueada?). Verifique a Prevenção de Rastreamento do Edge.', 'error'); }
 }
 
 // ── Autenticação do administrador (Supabase Auth) ──
@@ -2355,6 +2357,7 @@ function togglePendencia() {
 }
 
 function saveACT() {
+  if (!requireAdmin()) return;   // sem login as alterações não vão para a nuvem e se perdem ao recarregar
   const entidade = document.getElementById('form-entidade').value.trim();
   const sei = document.getElementById('form-sei').value.trim();
   const fim = document.getElementById('form-fim').value;
@@ -2423,6 +2426,7 @@ function confirmDelete(id) {
 }
 
 function doDelete() {
+  if (!requireAdmin()) return;
   acts = acts.filter(a => a.id !== pendingDeleteId);
   saveData();
   closeConfirm();
