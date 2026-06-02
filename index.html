@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sistema de Gestão de ACTs — INSS</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ══ CONFIGURAÇÃO DO SUPABASE (Biblioteca compartilhada) ══
+  // Substitua os 2 valores abaixo pelos do SEU projeto Supabase.
+  // Settings → API → "Project URL" e "anon public".
+  const SUPABASE_URL = 'https://splkpfmpnpclxxuktggl.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_cqsFsMHz6Qja-EDHqLlIAA_RClNH72Q';
+  const BIB_BUCKET = 'biblioteca'; // nome do bucket de Storage (sensível a maiúsculas)
+  let _supa = null;
+  function supa(){
+    if(_supa) return _supa;
+    if(typeof supabase==='undefined' || SUPABASE_URL.startsWith('COLE_')) return null;
+    _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return _supa;
+  }
+</script>
 <style>
 :root {
   --primary: #00539C;
@@ -2569,68 +2585,70 @@ function updateBadges() {
 // ══════════════════════════════════════════════════════════════
 // BIBLIOTECA — IndexedDB
 // ══════════════════════════════════════════════════════════════
-let _bibDB=null, _bibDocs=[], _bibCat='Todos', _bibQ='';
+let _bibDocs=[], _bibCat='Todos', _bibQ='';
 
-function bibOpen(){
-  return new Promise((res,rej)=>{
-    if(_bibDB) return res(_bibDB);
-    const r=indexedDB.open('actBib',1);
-    r.onupgradeneeded=e=>{
-      const s=e.target.result.createObjectStore('docs',{keyPath:'id',autoIncrement:true});
-      s.createIndex('cat','cat',{unique:false});
-    };
-    r.onsuccess=e=>{_bibDB=e.target.result;res(_bibDB);};
-    r.onerror=e=>rej(e.target.error);
-  });
+// Gera um caminho único no Storage preservando a extensão.
+function bibPath(file){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  const rnd=(crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.round(Math.random()*1e9);
+  return rnd+(ext?'.'+ext:'');
 }
 
 async function bibSave(file,cat,desc){
-  const db=await bibOpen();
-  return new Promise((res,rej)=>{
-    const fr=new FileReader();
-    fr.onload=e=>{
-      const tx=db.transaction('docs','readwrite');
-      const req=tx.objectStore('docs').add({
-        nome:file.name, cat, desc:desc||'',
-        tipo:(file.name.split('.').pop()||'').toLowerCase(),
-        tam:bibFmtSz(file.size),
-        data:new Date().toLocaleDateString('pt-BR'),
-        mime:file.type||'application/octet-stream',
-        blob:e.target.result
-      });
-      req.onsuccess=()=>res(); req.onerror=()=>rej(req.error);
-    };
-    fr.onerror=()=>rej(fr.error);
-    fr.readAsArrayBuffer(file);
+  const s=supa();
+  if(!s) throw new Error('Supabase não configurado.');
+  const path=bibPath(file);
+  // 1) sobe o arquivo para o Storage
+  const up=await s.storage.from(BIB_BUCKET).upload(path,file,{
+    contentType:file.type||'application/octet-stream', upsert:false
   });
+  if(up.error) throw up.error;
+  // 2) grava os metadados na tabela
+  const ins=await s.from('biblioteca_docs').insert({
+    nome:file.name, cat, descricao:desc||'',
+    tipo:(file.name.split('.').pop()||'').toLowerCase(),
+    tam:bibFmtSz(file.size),
+    data:new Date().toLocaleDateString('pt-BR'),
+    mime:file.type||'application/octet-stream',
+    path
+  });
+  if(ins.error){ // desfaz o upload se a gravação falhar
+    await s.storage.from(BIB_BUCKET).remove([path]);
+    throw ins.error;
+  }
 }
 
 async function bibAll(){
-  const db=await bibOpen();
-  return new Promise((res,rej)=>{
-    const r=db.transaction('docs','readonly').objectStore('docs').getAll();
-    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
-  });
+  const s=supa();
+  if(!s) return [];
+  const r=await s.from('biblioteca_docs').select('*').order('id',{ascending:false});
+  if(r.error){console.error(r.error);return [];}
+  // mapeia descricao -> desc para manter a UI existente
+  return (r.data||[]).map(d=>({...d, desc:d.descricao}));
 }
 
 async function bibDel(id){
-  const db=await bibOpen();
-  return new Promise((res,rej)=>{
-    const r=db.transaction('docs','readwrite').objectStore('docs').delete(id);
-    r.onsuccess=()=>res(); r.onerror=()=>rej(r.error);
-  });
+  const s=supa();
+  if(!s) return;
+  // busca o caminho do arquivo antes de excluir
+  const q=await s.from('biblioteca_docs').select('path').eq('id',id).single();
+  if(!q.error && q.data && q.data.path){
+    await s.storage.from(BIB_BUCKET).remove([q.data.path]);
+  }
+  const del=await s.from('biblioteca_docs').delete().eq('id',id);
+  if(del.error) throw del.error;
 }
 
 async function bibDownload(id){
-  const db=await bibOpen();
-  const doc=await new Promise((res,rej)=>{
-    const r=db.transaction('docs','readonly').objectStore('docs').get(id);
-    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
-  });
+  const s=supa();
+  if(!s) return;
+  const doc=_bibDocs.find(d=>String(d.id)===String(id));
   if(!doc) return;
-  const url=URL.createObjectURL(new Blob([doc.blob],{type:doc.mime}));
-  const a=document.createElement('a'); a.href=url; a.download=doc.nome; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  // bucket público: baixa via URL pública
+  const pub=s.storage.from(BIB_BUCKET).getPublicUrl(doc.path);
+  const a=document.createElement('a');
+  a.href=pub.data.publicUrl; a.download=doc.nome; a.target='_blank';
+  document.body.appendChild(a); a.click(); a.remove();
 }
 
 function bibFmtSz(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
@@ -2750,19 +2768,25 @@ async function bibSubmit(){
   const pt=document.getElementById('bib-prog-txt');
   pw.style.display='';
   let done=0;
-  for(let i=0;i<files.length;i+=5){
-    await Promise.all(files.slice(i,i+5).map(f=>bibSave(f,cat,desc)));
-    done+=Math.min(5,files.length-i);
-    pb.style.width=Math.round(done/files.length*100)+'%';
-    pt.textContent=`${done} de ${files.length}`;
-    await new Promise(r=>setTimeout(r,0));
+  try{
+    for(let i=0;i<files.length;i+=5){
+      await Promise.all(files.slice(i,i+5).map(f=>bibSave(f,cat,desc)));
+      done+=Math.min(5,files.length-i);
+      pb.style.width=Math.round(done/files.length*100)+'%';
+      pt.textContent=`${done} de ${files.length}`;
+      await new Promise(r=>setTimeout(r,0));
+    }
+    bibCloseModal();
+    toast(`${files.length} arquivo(s) adicionado(s)!`,'success');
+  }catch(err){
+    console.error(err);
+    toast('Erro ao enviar: '+(err&&err.message?err.message:'verifique a configuração do Supabase')+'.','error');
+  }finally{
+    btn.disabled=false; btn.textContent='⬆ Enviar';
+    pb.style.width='0%'; pw.style.display='none';
+    _bibDocs=await bibAll();
+    bibRenderUI();
   }
-  bibCloseModal();
-  btn.disabled=false; btn.textContent='⬆ Enviar';
-  pb.style.width='0%'; pw.style.display='none';
-  _bibDocs=await bibAll();
-  bibRenderUI();
-  toast(`${files.length} arquivo(s) adicionado(s)!`,'success');
 }
 
 function bibSetupDrop(){
@@ -3029,71 +3053,45 @@ function buildDocumentHTML() {
 <meta charset="UTF-8">
 <title>${doc.label || 'Minuta'} — INSS GEX Poços de Caldas</title>
 <style>
-  /* ═══ Configuração de página — A4 retrato, margens 3cm L/R, 2,499cm T/B ═══ */
-  @page { size: 21.001cm 29.7cm; margin: 2.499cm 3cm 2.499cm 3cm; }
+  @page { size: A4; margin: 3cm 2.5cm 2.5cm 3cm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: Calibri, 'Calibri Light', Arial, sans-serif;
     font-size: 12pt;
     color: #000;
     background: #fff;
-    margin: 2.499cm 3cm 2.499cm 3cm;
-    line-height: 12pt;        /* line-spacing EXACT 12pt conforme JSON */
+    margin: 3cm 2.5cm 2.5cm 3cm;
+    line-height: 1.5;
   }
-  p, div { line-height: 12pt; }
 
-  /* ── CABEÇALHO institucional (Calibri 13,5 / centro / linha 12pt exato / espaço 6pt) ── */
+  /* ── Cabeçalho institucional SEI ── */
   .sei-header {
     text-align: center;
-    margin-bottom: 14pt;
+    margin-bottom: 18pt;
+    line-height: 1.3;
   }
-  .sei-header .h-linha,
   .sei-header .h-orgao {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 13.5pt;
-    font-weight: normal;
-    text-align: center;
-    line-height: 12pt;
-    margin: 6pt 0;
-    padding: 0 0.212cm;
+    font-size: 12pt;
+    font-weight: bold;
+    text-transform: uppercase;
   }
-  .sei-header .h-orgao { font-weight: normal; text-transform: none; }
+  .sei-header .h-linha {
+    font-size: 12pt;
+  }
   .sei-header .h-separador {
-    border-top: 1px solid #000;
+    border-top: 2px solid #000;
     border-bottom: 1px solid #000;
     margin: 6pt 0;
     padding: 2pt 0;
   }
-  /* PORTARIA_REFERENCIA — Calibri 12 BOLD centro */
   .sei-header .h-doc-tipo {
-    font-family: Calibri, Arial, sans-serif;
     font-size: 12pt;
     font-weight: bold;
-    text-align: center;
-    line-height: 12pt;
-    margin: 6pt 0;
-    padding: 0 0.212cm;
     text-transform: uppercase;
+    margin-top: 4pt;
   }
 
-  /* TITULO_DOCUMENTO — Calibri 12, justificado, sem espaços antes/depois */
-  .doc-title {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    text-align: justify;
-    line-height: 12pt;
-    margin: 0;
-  }
-
-  /* SEPARADOR (Times New Roman 13,5) — usado entre blocos */
-  .sep-tnr {
-    font-family: 'Times New Roman', serif;
-    font-size: 13.5pt;
-    line-height: 12pt;
-    margin: 6pt 0 9.75pt 0;
-  }
-
-  /* ── Ementa (coluna direita, 48%) — Calibri 12 negrito justificado ── */
+  /* ── Ementa (coluna direita, 48%) ── */
   .ementa-box {
     float: right;
     width: 48%;
@@ -3102,122 +3100,72 @@ function buildDocumentHTML() {
     font-weight: bold;
     text-align: justify;
     text-transform: uppercase;
-    line-height: 12pt;
+    line-height: 1.5;
   }
   .clearfix::after { content: ''; display: table; clear: both; }
 
-  /* PREAMBULO_PARTES — Calibri 12 justify, first-line 2,501cm */
-  .p-preambulo {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    text-align: justify;
-    line-height: 12pt;
-    text-indent: 2.501cm;
-    margin: 6pt 0;
-  }
-
-  /* TITULO_CLAUSULA_PRIMEIRA — Calibri 12 BOLD justify */
+  /* ── Títulos de cláusula: negrito, alinhado à esquerda ── */
   .p-clausula {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    font-weight: bold;
-    text-align: justify;
-    line-height: 12pt;
-    margin: 6pt 0;
-    text-transform: uppercase;
-  }
-
-  /* Título centralizado para anexos */
-  .p-doc-titulo {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    font-weight: bold;
-    text-align: center;
-    line-height: 12pt;
-    margin: 6pt 0;
-    text-transform: uppercase;
-  }
-
-  /* CORPO_CLAUSULA_PADRAO — Calibri 12 justify first-line 2,501cm */
-  .p-body {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    text-align: justify;
-    line-height: 12pt;
-    text-indent: 2.501cm;
-    margin: 6pt 0;
-  }
-
-  /* CORPO_CLAUSULA_SEM_RECUO — Calibri 12 justify sem recuo */
-  .p-paragrafo {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    text-align: justify;
-    line-height: 12pt;
-    margin: 6pt 0;
-  }
-
-  /* INCISO — Calibri 12 justify left 1,244cm + first-line 1,249cm */
-  .p-inciso {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    text-align: justify;
-    line-height: 12pt;
-    margin: 6pt 0 6pt 1.244cm;
-    text-indent: 1.249cm;
-  }
-
-  /* Alíneas — segue padrão de inciso com indentação maior */
-  .p-alinea {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    text-align: justify;
-    line-height: 12pt;
-    margin: 6pt 0 6pt 2.493cm;
-    text-indent: 1.249cm;
-  }
-
-  /* ── ASSINATURAS conforme JSON ── */
-  .sign-section { margin-top: 36pt; page-break-inside: avoid; }
-  .sign-local {
-    font-family: Calibri, Arial, sans-serif;
-    font-size: 12pt;
-    text-align: right;       /* ASSINATURA_DATA_DIREITA */
-    line-height: 12pt;
-    margin-bottom: 28pt;
-  }
-  .sign-table { width: 100%; border-collapse: collapse; }
-  .sign-table td { width: 50%; padding: 0 16pt; vertical-align: top; text-align: center; }
-  .sign-line { border-top: 1px solid #000; margin: 0 auto 3pt; width: 90%; }
-  /* ASSINATURA_GERENTE_NOME — Calibri 12 LEFT */
-  .sign-table td.sign-gerente { text-align: left; }
-  .sign-table td.sign-gerente .sign-name  { font-family: Calibri; font-size: 12pt; font-weight: normal; text-align: left; line-height: 12pt; }
-  .sign-table td.sign-gerente .sign-cargo,
-  .sign-table td.sign-gerente .sign-org   { font-family: Calibri; font-size: 12pt; text-align: left; line-height: 12pt; }
-  /* ASSINATURA_ACORDANTE_NOME — Calibri 12 BOLD CENTRO */
-  .sign-table td.sign-acord .sign-name    { font-family: Calibri; font-size: 12pt; font-weight: bold; text-align: center; line-height: 12pt; margin: 6pt 0; }
-  /* ASSINATURA_ACORDANTE_CARGO — Calibri 12 CENTRO */
-  .sign-table td.sign-acord .sign-cargo,
-  .sign-table td.sign-acord .sign-org     { font-family: Calibri; font-size: 12pt; text-align: center; line-height: 12pt; margin: 6pt 0; }
-
-  /* ── TESTEMUNHAS ── */
-  .witness-section { margin-top: 28pt; page-break-inside: avoid; }
-  /* TESTEMUNHAS_TITULO — Calibri 12 BOLD LEFT */
-  .witness-title {
-    font-family: Calibri, Arial, sans-serif;
     font-size: 12pt;
     font-weight: bold;
     text-align: left;
-    line-height: 12pt;
-    margin: 5pt 0;
+    text-transform: uppercase;
+    margin: 14pt 0 4pt 0;
   }
+
+  /* ── Título de documento/anexo: centralizado, negrito ── */
+  .p-doc-titulo {
+    font-size: 12pt;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 10pt 0 4pt 0;
+  }
+
+  /* ── Corpo (parágrafos comuns): recuo 1,25 cm, justificado ── */
+  .p-body {
+    font-size: 12pt;
+    text-align: justify;
+    text-indent: 1.25cm;
+    margin: 4pt 0;
+  }
+
+  /* ── § (parágrafos): recuo esquerdo 2,5 cm, sem text-indent ── */
+  .p-paragrafo {
+    font-size: 12pt;
+    text-align: justify;
+    margin: 4pt 0 4pt 2.5cm;
+  }
+
+  /* ── Incisos (I –, II –): recuo 2,5 cm ── */
+  .p-inciso {
+    font-size: 12pt;
+    text-align: justify;
+    margin: 4pt 0 4pt 2.5cm;
+  }
+
+  /* ── Alíneas (a), b)): recuo 4 cm ── */
+  .p-alinea {
+    font-size: 12pt;
+    text-align: justify;
+    margin: 4pt 0 4pt 4cm;
+  }
+
+  /* ── Bloco de assinaturas ── */
+  .sign-section { margin-top: 48pt; page-break-inside: avoid; }
+  .sign-local { text-align: center; font-size: 12pt; margin-bottom: 36pt; }
+  .sign-table { width: 100%; border-collapse: collapse; }
+  .sign-table td { width: 50%; text-align: center; padding: 0 16pt; vertical-align: top; }
+  .sign-line { border-top: 1px solid #000; margin: 0 auto 3pt; width: 90%; }
+  .sign-name  { font-size: 12pt; font-weight: bold; }
+  .sign-cargo { font-size: 12pt; }
+  .sign-org   { font-size: 12pt; }
+
+  /* ── Testemunhas ── */
+  .witness-section { margin-top: 36pt; page-break-inside: avoid; }
+  .witness-title { font-size: 12pt; font-weight: bold; text-align: center; margin-bottom: 24pt; }
   .witness-table { width: 100%; border-collapse: collapse; }
-  .witness-table td { width: 50%; padding: 0 16pt; vertical-align: top; }
-  /* TESTEMUNHA_NOME/CPF/ASSINATURA — Calibri 12 JUSTIFY */
-  .witness-table .sign-line  { border-top: 1px solid #000; margin: 0 0 3pt; width: 100%; }
-  .witness-table .sign-name,
-  .witness-table .sign-cargo,
-  .witness-table .sign-org   { font-family: Calibri; font-size: 12pt; text-align: justify; line-height: 12pt; margin: 6pt 0; }
+  .witness-table td { width: 50%; text-align: center; padding: 0 16pt; vertical-align: top; }
 
   @media print {
     body { margin: 0; }
@@ -3248,14 +3196,14 @@ ${paragraphs}
   <p class="sign-local">${sigLocal}</p>
   <table class="sign-table">
     <tr>
-      <td class="sign-gerente">
+      <td>
         <div class="sign-line"></div>
         <div class="sign-name">${mgrName}</div>
         <div class="sign-cargo">${mgrRole}</div>
         <div class="sign-org">INSS — Gerência Executiva de Poços de Caldas/MG</div>
         <div class="sign-org">CPF nº ${mgrCpf}</div>
       </td>
-      <td class="sign-acord">
+      <td>
         <div class="sign-line"></div>
         <div class="sign-name">${sigNome1}</div>
         <div class="sign-cargo">${sigCargo1}</div>
