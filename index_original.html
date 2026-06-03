@@ -2632,18 +2632,34 @@ function importJSON(e) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
+    // 1) Valida o arquivo ANTES de tocar nos dados atuais
+    let data;
     try {
-      const data = JSON.parse(ev.target.result);
-      if (!data.acts) throw new Error('Arquivo inválido');
+      data = JSON.parse(ev.target.result);
+      if (!data.acts || !Array.isArray(data.acts)) throw new Error('Arquivo inválido');
+    } catch(err) {
+      toast('Erro ao importar: arquivo inválido.', 'error');
+      return;
+    }
+    // 2) Pede confirmação antes de SOBRESCREVER tudo (proteção contra perda acidental)
+    const novos  = data.acts.length;
+    const atuais = acts.length;
+    const dt = data.exportedAt ? new Date(data.exportedAt).toLocaleDateString('pt-BR') : 'data desconhecida';
+    document.getElementById('confirm-title').textContent = 'Restaurar backup';
+    document.getElementById('confirm-text').textContent =
+      `Isto vai SUBSTITUIR os ${atuais} acordo(s) atuais pelos ${novos} acordo(s) do backup (gerado em ${dt}). Esta ação não pode ser desfeita. Confirmar?`;
+    const okBtn = document.getElementById('confirm-btn-ok');
+    okBtn.textContent = 'Restaurar backup';
+    okBtn.onclick = () => {
       acts = data.acts;
       if (data.gerencia) settings = { ...settings, ...data.gerencia };
       saveData();
+      closeConfirm();
       toast('Dados importados com sucesso!', 'success');
       renderDashboard();
       updateBadges();
-    } catch(err) {
-      toast('Erro ao importar: arquivo inválido.', 'error');
-    }
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
   };
   reader.readAsText(file);
   e.target.value = '';
