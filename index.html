@@ -1754,14 +1754,14 @@ function renderDashboard() {
   const total = acts.length;
   const conformidade = acts.filter(a => a.situacao === 'conformidade').length;
   const pendentes = acts.filter(a => a.situacao === 'pendente').length;
-  const v6 = acts.filter(a => daysLeft(a.dataFim) <= 180 && daysLeft(a.dataFim) > 0).length;
-  const v12 = acts.filter(a => daysLeft(a.dataFim) <= 365 && daysLeft(a.dataFim) > 0).length;
+  const v6 = acts.filter(a => { const d = daysLeft(a.dataFim); return d > 90 && d <= 180; }).length;
+  const v12 = acts.filter(a => { const d = daysLeft(a.dataFim); return d > 180 && d <= 365; }).length;
   const vencidos = acts.filter(a => daysLeft(a.dataFim) <= 0).length;
 
   document.getElementById('dash-subtitle').textContent =
     `${settings.gerenciaNome || 'INSS'} • ${total} acordo(s) cadastrado(s) • ${conformidade} em conformidade • ${pendentes} com pendências`;
 
-  const v3  = acts.filter(a => { const d = daysLeft(a.dataFim); return d <= 90  && d > 0; }).length;
+  const v3  = acts.filter(a => { const d = daysLeft(a.dataFim); return d > 0 && d <= 180; }).length;
   const confPct = total > 0 ? ((conformidade/total)*100).toFixed(0) : 0;
   const nAct    = acts.filter(a=>a.tipo==='ACT').length;
   const nTermo  = acts.filter(a=>a.tipo==='Termo de Adesão').length;
@@ -1795,11 +1795,11 @@ function renderDashboard() {
         total>0?(pendentes/total*100):0, "showPage('pendencias')", null) +
 
     kpi('kc-amber', '🗓', 'Vencem em 12 Meses', v12,
-        `Próximos 365 dias`,
+        `Entre 6 e 12 meses`,
         total>0?(v12/total*100):0, "showPage('calendario')", null) +
 
     kpi('kc-orange','⏳', 'Vencem em 06 Meses', v6,
-        `Próximos 180 dias`,
+        `Entre 3 e 6 meses`,
         total>0?(v6/total*100):0, "showPage('calendario')", null) +
 
     kpi('kc-crimson','🚨', 'Vencem em 03 Meses', v3,
