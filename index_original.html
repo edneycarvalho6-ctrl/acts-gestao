@@ -1968,8 +1968,8 @@ function renderDashboard() {
         </div>
       </div>`).join('');
 
-  // Dash proximos
-  const prox = acts.filter(a => daysLeft(a.dataFim) <= 365 && daysLeft(a.dataFim) > 0)
+  // Dash proximos — 12 Meses: faixa exclusiva de 6 a 12 meses (181 a 365 dias)
+  const prox = acts.filter(a => { const d = daysLeft(a.dataFim); return d > 180 && d <= 365; })
     .sort((a,b) => new Date(a.dataFim) - new Date(b.dataFim));
   const proxDiv = document.getElementById('dash-proximos-list');
   const proxCount = document.getElementById('dash-prox-count');
@@ -1997,8 +1997,8 @@ function renderDashboard() {
                                dl <= 180 ? 'danger'   : dl <= 270 ? 'orange'  : 'blue', '📅');
       }).join('');
 
-  // Vencem em 06 meses
-  const v6list = acts.filter(a => { const d = daysLeft(a.dataFim); return d <= 180 && d > 0; })
+  // Vencem em 06 meses — faixa de 3 a 6 meses (91 a 180 dias)
+  const v6list = acts.filter(a => { const d = daysLeft(a.dataFim); return d > 90 && d <= 180; })
     .sort((a,b) => new Date(a.dataFim) - new Date(b.dataFim));
   const v6Div   = document.getElementById('dash-v6-list');
   const v6Count = document.getElementById('dash-v6-count');
@@ -2010,8 +2010,8 @@ function renderDashboard() {
         return buildVencRow(a, dl <= 90 ? 'critical' : 'orange', dl <= 90 ? 'danger' : 'orange', '🟠');
       }).join('');
 
-  // Vencem em 03 meses
-  const v3list = acts.filter(a => { const d = daysLeft(a.dataFim); return d <= 90 && d > 0; })
+  // Vencem em 03 meses — funil acumulativo: tudo abaixo de 6 meses (1 a 180 dias)
+  const v3list = acts.filter(a => { const d = daysLeft(a.dataFim); return d > 0 && d <= 180; })
     .sort((a,b) => new Date(a.dataFim) - new Date(b.dataFim));
   const v3Div   = document.getElementById('dash-v3-list');
   const v3Count = document.getElementById('dash-v3-count');
